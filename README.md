@@ -1,27 +1,70 @@
-# AngularIvyPathsIssue
+# Angular Ivy Paths Issue with Libraries
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 9.0.2.
+## Overview
 
-## Development server
+This repo demonstrates an issue during the `ngcc` phase of building ViewEngine Angular libraries with Ivy.
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+This seems to occur by doing the following:
 
-## Code scaffolding
+* Create a monorepo, where a library name matches a substring of another repo (ie: "**my-lib**" and "**my-lib**-second").
+* Build the libraries with `"enableIvy": false` .
+* Build the app, referencing both libraries in their **dist** folder.
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+## Demo
 
-## Build
+This repo contains branches showcasing correct and incorrect behavior.
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build.
+### Setup
 
-## Running unit tests
+1. `git checkout issue/baseline`
+1. `npm install`
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+### Demo **Incorrect Behavior**
 
-## Running end-to-end tests
+* **my-lib**
+* **my-lib**-second
 
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
+1. `git checkout issue/incorrect`
+1. `npm run demo`
+1. Notice build fails with error.
 
-## Further help
+### Demo **Correct Behavior**
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+* **my-lib-first**
+* **my-lib-second**
+
+1. `git checkout issue/correct`
+1. `npm run demo`
+1. Notice build succeeds.
+
+## Observations
+
+After the `ngcc` step, libraries should have a `__ivy_ngcc__` directory.
+
+In the **issue/correct** branch, `my-lib-first` and `my-lib-second` have these directories as expected:
+
+```
+dist/
+  my-lib-first/
+    __ivy_ngcc__/
+      fesm2015/
+    ...
+  my-lib-second/
+    __ivy_ngcc__/
+      fesm2015/
+    ...
+```
+
+In the **issue/incorrect** branch, however, notice the following structure:
+
+```
+dist/
+  my-lib/
+    __ivy_ngcc__/
+      fesm2015/
+    my-lib-second\
+      fesm2015/
+    ...
+  my-lib-second/
+    ...
+```
